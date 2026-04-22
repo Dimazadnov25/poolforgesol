@@ -8,6 +8,7 @@ export function usePool() {
 
   const [poolState, setPoolState] = useState(null);
   const [solPrice, setSolPrice] = useState(null);
+  const [poolApr, setPoolApr] = useState(null);
   const [solBalance, setSolBalance] = useState(null);
   const [usdcBalance, setUsdcBalance] = useState(null);
   const [positions, setPositions] = useState([]);
@@ -60,6 +61,11 @@ export function usePool() {
   useEffect(() => {
     if (wallet.connected) {
       refreshBalances();
+    // Fetch APR
+    fetch("https://api.mainnet.orca.so/v1/whirlpool/list").then(r=>r.json()).then(d=>{
+      const p=d.whirlpools?.find(w=>w.address==="Czfq3xZZDmsdGdUyrNLtRhGc47cXcZtLG4crryfu44zE");
+      if(p&&p.volume?.day&&p.tvl) setPoolApr(((p.volume.day*0.0004/p.tvl)*365*100).toFixed(1));
+    }).catch(()=>{});
       loadPositions();
     }
   }, [wallet.connected, refreshBalances]);
@@ -462,6 +468,7 @@ export function usePool() {
     refreshBalances,
     openPosition,
     fetchPosition,
+    poolApr,
     addLiquidity,
     collectFees,
     decreaseLiquidity,

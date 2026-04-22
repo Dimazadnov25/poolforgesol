@@ -71,6 +71,10 @@ export default function PoolDashboard() {
       {wallet.connected && pool.positions.length > 0 && (
         <div style={{background:'var(--card)',borderRadius:'12px',padding:'1rem',margin:'0.5rem 0',display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'1rem',textAlign:'center'}}>
           <div>
+            <div style={{color:'var(--muted)',fontSize:'0.75rem'}}>Pool APR</div>
+            <div style={{color:'#19fb9b',fontWeight:'bold',fontSize:'1.1rem'}}>{pool.poolApr ? pool.poolApr+'%' : '...'}</div>
+          </div>
+          <div>
             <div style={{color:'var(--muted)',fontSize:'0.75rem'}}>Total Value</div>
             <div style={{color:'#19fb9b',fontWeight:'bold',fontSize:'1.1rem'}}>${totals.value.toFixed(2)}</div>
           </div>
