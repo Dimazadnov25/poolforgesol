@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 
-export default function PositionDetails({ position, poolState, fetchPosition, onClose, onDecrease, onCollect, onAddLiquidity }) {
+export default function PositionDetails({ position, poolState, fetchPosition, onClose, onDecrease, onCollect, onAddLiquidity, onUpdate }) {
   const [details, setDetails] = useState(null);
 
   useEffect(() => {
     if (position?.mint) {
-      fetchPosition(position.mint).then(setDetails);
+      fetchPosition(position.mint).then(d => { setDetails(d); if (onUpdate) onUpdate(position.mint, d); });
+      const interval = setInterval(() => fetchPosition(position.mint).then(setDetails), 60000);
+      return () => clearInterval(interval);
     }
   }, [position, fetchPosition]);
 
