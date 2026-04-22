@@ -452,6 +452,7 @@ export function usePool() {
       const { blockhash: bh1, lastValidBlockHeight: lv1 } = await connection.getLatestBlockhash();
       const tx1 = new Transaction({ recentBlockhash: bh1, feePayer: wallet.publicKey });
       const wsolInfo = await connection.getAccountInfo(tokenOwnerA);
+      if (!wsolInfo) {
         tx1.add({ programId: ASSOC, keys: [
           { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
           { pubkey: tokenOwnerA, isSigner: false, isWritable: true },
@@ -509,7 +510,7 @@ export function usePool() {
       const newPriceUpper = parseFloat((currentPrice * 1.015).toFixed(2));
       const solBal = await connection.getBalance(wallet.publicKey);
       const solAmount = Math.max(0.001, (solBal - 0.05e9) / 1e9);
-      await openPosition(newPriceLower, newPriceUpper, solAmount);
+      await openPosition({ priceLower: newPriceLower, priceUpper: newPriceUpper, solAmount });
       setTxStatus('confirmed');
       setPositions(prev => prev.filter(p => p.mint !== mintAddress));
       await refreshBalances();
