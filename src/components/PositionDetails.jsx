@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-export default function PositionDetails({ position, poolState, fetchPosition, onClose, onDecrease, onCollect, onAddLiquidity, onUpdate }) {
+export default function PositionDetails({ position, poolState, fetchPosition, onClose, onDecrease, onCollect, onAddLiquidity, onUpdate, onRebalance }) {
   const [details, setDetails] = useState(null);
 
   useEffect(() => {
@@ -63,6 +63,9 @@ export default function PositionDetails({ position, poolState, fetchPosition, on
         if (amt && onAddLiquidity) onAddLiquidity(position.mint, parseFloat(amt));
       }} style={{ marginTop: '0.5rem', marginRight: '0.5rem', padding: '0.4rem 1rem', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}>
         Add Liquidity
+      </button>
+      <button onClick={() => onRebalance && onRebalance(position.mint)} style={{ marginTop: '0.5rem', marginRight: '0.5rem', padding: '0.4rem 1rem', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}>
+        ⚡ Rebalance (3%)
       </button>
       <button onClick={() => onCollect && onCollect(position.mint)} style={{ marginTop: '0.5rem', marginRight: '0.5rem', padding: '0.4rem 1rem', background: '#19fb9b', color: '#000', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem' }}>
         Collect Fees

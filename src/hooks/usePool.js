@@ -415,6 +415,111 @@ export function usePool() {
       setLoading(false);
     }
   }, [wallet, connection, poolState, refreshBalances]);
+
+  const rebalancePosition = useCallback(async (mintAddress) => {
+    try {
+      setLoading(true);
+      setTxStatus('rebalancing');
+      const { PublicKey, Transaction, TransactionInstruction, SystemProgram } = await import('@solana/web3.js');
+      const { getATA, buildIncreaseLiquidityIx, getTickArrayAddress, getStartTickIndex } = await import('../lib/instructions');
+      const { getPositionPDA, SOL_USDC_WHIRLPOOL, priceToTick } = await import('../lib/pool');
+      const W = new PublicKey('whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc');
+      const T = new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA');
+      const MEMO = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
+      const WSOL = new PublicKey('So11111111111111111111111111111111111111112');
+      const USDC = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
+      const ASSOC = new PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL');
+      const mint = new PublicKey(mintAddress);
+      const [positionPDA] = PublicKey.findProgramAddressSync([Buffer.from('position'), mint.toBuffer()], W);
+      const positionTokenAccount = await getATA(mint, wallet.publicKey);
+      const tokenOwnerA = await getATA(WSOL, wallet.publicKey);
+      const tokenOwnerB = await getATA(USDC, wallet.publicKey);
+      const posInfo = await connection.getAccountInfo(positionPDA);
+      const liquidity = posInfo.data.readBigUInt64LE(72);
+      const tickLower = posInfo.data.readInt32LE(88);
+      const tickUpper = posInfo.data.readInt32LE(92);
+      const tickArrayLower = getTickArrayAddress(SOL_USDC_WHIRLPOOL, getStartTickIndex(tickLower, poolState.tickSpacing));
+      const tickArrayUpper = getTickArrayAddress(SOL_USDC_WHIRLPOOL, getStartTickIndex(tickUpper, poolState.tickSpacing));
+      // TX1: Decrease liquidity
+      const decDisc = Buffer.from([58,127,188,62,79,82,196,96]);
+      const decData = Buffer.alloc(41);
+      decDisc.copy(decData,0);
+      decData.writeBigUInt64LE(liquidity&0xFFFFFFFFFFFFFFFFn,8);
+      decData.writeBigUInt64LE(0n,16);
+      decData.writeBigUInt64LE(0n,24);
+      decData.writeBigUInt64LE(0n,32);
+      decData.writeUInt8(0,40);
+      const { blockhash: bh1, lastValidBlockHeight: lv1 } = await connection.getLatestBlockhash();
+      const tx1 = new Transaction({ recentBlockhash: bh1, feePayer: wallet.publicKey });
+      const wsolInfo = await connection.getAccountInfo(tokenOwnerA);
+        tx1.add({ programId: ASSOC, keys: [
+          { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+          { pubkey: tokenOwnerA, isSigner: false, isWritable: true },
+          { pubkey: wallet.publicKey, isSigner: false, isWritable: false },
+          { pubkey: WSOL, isSigner: false, isWritable: false },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+          { pubkey: T, isSigner: false, isWritable: false },
+        ], data: Buffer.from([]) });
+      }
+      tx1.add(new TransactionInstruction({ programId: W, keys: [
+        { pubkey: SOL_USDC_WHIRLPOOL, isSigner: false, isWritable: true },
+        { pubkey: T, isSigner: false, isWritable: false },
+        { pubkey: T, isSigner: false, isWritable: false },
+        { pubkey: MEMO, isSigner: false, isWritable: false },
+        { pubkey: wallet.publicKey, isSigner: true, isWritable: false },
+        { pubkey: positionPDA, isSigner: false, isWritable: true },
+        { pubkey: positionTokenAccount, isSigner: false, isWritable: false },
+        { pubkey: WSOL, isSigner: false, isWritable: false },
+        { pubkey: USDC, isSigner: false, isWritable: false },
+        { pubkey: tokenOwnerA, isSigner: false, isWritable: true },
+        { pubkey: tokenOwnerB, isSigner: false, isWritable: true },
+        { pubkey: new PublicKey('EUuUbDcafPrmVTD5M6qoJAoyyNbihBhugADAxRMn5he9'), isSigner: false, isWritable: true },
+        { pubkey: new PublicKey('2WLWEuKDgkDUccTpbwYp1GToYktiSB1cXvreHUwiSUVP'), isSigner: false, isWritable: true },
+        { pubkey: tickArrayLower, isSigner: false, isWritable: true },
+        { pubkey: tickArrayUpper, isSigner: false, isWritable: true },
+      ], data: decData }));
+      tx1.add(new TransactionInstruction({ programId: T, keys: [
+        { pubkey: tokenOwnerA, isSigner: false, isWritable: true },
+        { pubkey: wallet.publicKey, isSigner: false, isWritable: true },
+        { pubkey: wallet.publicKey, isSigner: true, isWritable: false },
+      ], data: Buffer.from([9]) }));
+      setTxStatus('signing');
+      const signed1 = await wallet.signTransaction(tx1);
+      const sig1 = await connection.sendRawTransaction(signed1.serialize(), { skipPreflight: true });
+      await connection.confirmTransaction({ signature: sig1, blockhash: bh1, lastValidBlockHeight: lv1 }, 'confirmed');
+      // TX2: Close position
+      const closeDisc = Buffer.from([123,134,81,0,49,68,98,98]);
+      const { blockhash: bh2, lastValidBlockHeight: lv2 } = await connection.getLatestBlockhash();
+      const tx2 = new Transaction({ recentBlockhash: bh2, feePayer: wallet.publicKey });
+      tx2.add(new TransactionInstruction({ programId: W, keys: [
+        { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+        { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+        { pubkey: positionPDA, isSigner: false, isWritable: true },
+        { pubkey: mint, isSigner: false, isWritable: true },
+        { pubkey: positionTokenAccount, isSigner: false, isWritable: true },
+        { pubkey: T, isSigner: false, isWritable: false },
+      ], data: closeDisc }));
+      setTxStatus('signing');
+      const signed2 = await wallet.signTransaction(tx2);
+      const sig2 = await connection.sendRawTransaction(signed2.serialize(), { skipPreflight: true });
+      await connection.confirmTransaction({ signature: sig2, blockhash: bh2, lastValidBlockHeight: lv2 }, 'confirmed');
+      // TX3: Open new position 3% range
+      const currentPrice = poolState.currentPrice;
+      const newPriceLower = parseFloat((currentPrice * 0.985).toFixed(2));
+      const newPriceUpper = parseFloat((currentPrice * 1.015).toFixed(2));
+      const solBal = await connection.getBalance(wallet.publicKey);
+      const solAmount = Math.max(0.001, (solBal - 0.05e9) / 1e9);
+      await openPosition(newPriceLower, newPriceUpper, solAmount);
+      setTxStatus('confirmed');
+      setPositions(prev => prev.filter(p => p.mint !== mintAddress));
+      await refreshBalances();
+    } catch (e) {
+      setError(e.message);
+      setTxStatus(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [wallet, connection, poolState, refreshBalances]);
   const closePosition = useCallback(async (mintAddress) => {
     try {
       setLoading(true);
@@ -472,6 +577,7 @@ export function usePool() {
     addLiquidity,
     collectFees,
     decreaseLiquidity,
+    rebalancePosition,
     closePosition,
   };
 }

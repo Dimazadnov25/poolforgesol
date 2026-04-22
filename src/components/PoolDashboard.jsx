@@ -102,7 +102,7 @@ export default function PoolDashboard() {
                   onClose={pool.closePosition}
                   onDecrease={pool.decreaseLiquidity}
                   onCollect={pool.collectFees}
-                  onAddLiquidity={pool.addLiquidity}
+                  onAddLiquidity={pool.addLiquidity} onRebalance={pool.rebalancePosition}
                   onUpdate={handlePositionUpdate}
                 />
               ))}
