@@ -506,8 +506,8 @@ export function usePool() {
       await connection.confirmTransaction({ signature: sig2, blockhash: bh2, lastValidBlockHeight: lv2 }, 'confirmed');
       // TX3: Open new position 3% range
       const currentPrice = poolState.currentPrice;
-      const newPriceLower = parseFloat((currentPrice * 0.985).toFixed(2));
-      const newPriceUpper = parseFloat((currentPrice * 1.015).toFixed(2));
+      const newPriceLower = parseFloat((currentPrice * 0.97).toFixed(2));
+      const newPriceUpper = parseFloat((currentPrice * 1.03).toFixed(2));
       const solBal = await connection.getBalance(wallet.publicKey);
       const solAmount = Math.max(0.001, (solBal - 0.05e9) / 1e9);
       await openPosition({ priceLower: newPriceLower, priceUpper: newPriceUpper, solAmount });
