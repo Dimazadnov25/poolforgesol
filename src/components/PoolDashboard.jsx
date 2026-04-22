@@ -79,12 +79,8 @@ export default function PoolDashboard() {
             <div style={{color:'#19fb9b',fontWeight:'bold',fontSize:'1.1rem'}}>${totals.value.toFixed(2)}</div>
           </div>
           <div>
-            <div style={{color:'var(--muted)',fontSize:'0.75rem'}}>Earned SOL</div>
-            <div style={{color:'#19fb9b',fontWeight:'bold'}}>{totals.sol.toFixed(6)} SOL</div>
-          </div>
-          <div>
-            <div style={{color:'var(--muted)',fontSize:'0.75rem'}}>Earned USDC</div>
-            <div style={{color:'#19fb9b',fontWeight:'bold'}}>{totals.usdc.toFixed(4)} USDC</div>
+            <div style={{color:'var(--muted)',fontSize:'0.75rem'}}>Total Earned</div>
+            <div style={{color:'#19fb9b',fontWeight:'bold'}}>${(totals.sol*(pool.solPrice||0)+totals.usdc).toFixed(4)} USD</div>
           </div>
         </div>
       )}
