@@ -100,8 +100,8 @@ export function usePool() {
       const { Keypair, Transaction, PublicKey, LAMPORTS_PER_SOL: LAMPS } = await import('@solana/web3.js');
       const { priceToTick, getPositionPDA, SOL_USDC_WHIRLPOOL } = await import('../lib/pool');
       const { buildOpenPositionIx, buildIncreaseLiquidityIx, getATA, getTickArrayAddress, getStartTickIndex } = await import('../lib/instructions');
-      const tickLower = -25260;
-      const tickUpper = -24080;
+      const tickLower = priceToTick(priceLower, poolState.tickSpacing);
+      const tickUpper = priceToTick(priceUpper, poolState.tickSpacing);
       const positionMintKeypair = Keypair.generate();
       const positionMint = positionMintKeypair.publicKey;
       const positionPDA = getPositionPDA(positionMint);
